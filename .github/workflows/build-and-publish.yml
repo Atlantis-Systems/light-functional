@@ -1,0 +1,83 @@
+name: Build and Publish
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.10.2
+      with:
+        versionSpec: '5.x'
+    
+    - name: Determine Version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v0.10.2
+      with:
+        useConfigFile: true
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+    
+    - name: Test
+      run: dotnet test --no-build --configuration Release --verbosity normal
+    
+    - name: Pack Core
+      run: dotnet pack Core/Core.csproj --no-build --configuration Release --output ./packages -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
+    
+    - name: Pack Database
+      run: dotnet pack Database/Database.csproj --no-build --configuration Release --output ./packages -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
+    
+    - name: Pack Database.Npgsql
+      run: dotnet pack Database.Npgsql/Database.Npgsql.csproj --no-build --configuration Release --output ./packages -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
+    
+    - name: Pack Database.Sqlite
+      run: dotnet pack Database.Sqlite/Database.Sqlite.csproj --no-build --configuration Release --output ./packages -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
+    
+    - name: Pack Http
+      run: dotnet pack Http/Http.csproj --no-build --configuration Release --output ./packages -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
+    
+    - name: Publish to NuGet
+      if: github.ref == 'refs/heads/main'
+      run: |
+        for package in ./packages/*.nupkg; do
+          echo "Publishing $package"
+          dotnet nuget push "$package" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        done
+    
+    - name: Create GitHub Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./packages/*.nupkg
+        generate_release_notes: true
+        tag_name: v${{ steps.gitversion.outputs.semVer }}
+        name: Release ${{ steps.gitversion.outputs.semVer }}
+        prerelease: ${{ steps.gitversion.outputs.preReleaseTag != '' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
