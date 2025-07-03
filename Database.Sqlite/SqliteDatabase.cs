@@ -7,7 +7,7 @@ public class SqliteDatabase(SqliteConnection sqliteConnection) : ISqliteDatabase
     public static ISqliteDatabase CreateFile(string fileName)
     {
         var connectionString = $"Data Source={fileName}";
-        var connection = new SqliteConnection();
+        var connection = new SqliteConnection(connectionString);
         return new SqliteDatabase(connection);
     }
     
