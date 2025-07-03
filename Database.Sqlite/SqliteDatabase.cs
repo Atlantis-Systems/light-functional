@@ -17,7 +17,12 @@ public class SqliteDatabase : ISqliteDatabase
     
     public static ISqliteDatabase CreateInMemory()
     {
-        return new SqliteDatabase("Data Source=:memory:;Version=3;Pooling=True;Cache Size=10000;Journal Mode=WAL;Synchronous=Normal;");
+        return new SqliteDatabase("Data Source=:memory:");
+    }
+
+     public static ISqliteDatabase CreateSharedInMemory()
+    {
+        return new SqliteDatabase("Data Source=InMemoryDatabase;Mode=Memory;Cache=Shared");
     }
 
     public ISqliteDatabaseWithOpenedConnection OpenConnection()
