@@ -2,14 +2,13 @@ using Microsoft.Data.Sqlite;
 
 namespace LightFunctional.Database.Sqlite;
 
-public class SqliteDatabaseWithOpenedConnection(string connectionString) : ISqliteDatabaseWithOpenedConnection
+public class SqliteDatabaseWithOpenedConnection(SqliteConnection connection) : ISqliteDatabaseWithOpenedConnection
 {
-    private readonly SqliteConnection _connection = new(connectionString);
 
     public ISqliteDatabaseWithOpenedConnectionAndQuery Sql(FormattableString sql)
     {
         InternalQuery = sql;
-        return new SqliteDatabaseWithOpenedConnectionAndQuery(this, _connection);
+        return new SqliteDatabaseWithOpenedConnectionAndQuery(this, connection);
     }
 
     

@@ -1,37 +1,32 @@
+using Microsoft.Data.Sqlite;
+
 namespace LightFunctional.Database.Sqlite;
 
-public class SqliteDatabase : ISqliteDatabase
+public class SqliteDatabase(SqliteConnection sqliteConnection) : ISqliteDatabase
 {
-    private readonly string _connectionString;
-
-    private SqliteDatabase(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
-    
     public static ISqliteDatabase CreateFile(string fileName)
     {
-        return new SqliteDatabase(
-            $"Data Source={fileName};Version=3;Pooling=True;Cache Size=10000;Journal Mode=WAL;Synchronous=Normal;");
+        var connectionString = $"Data Source={fileName}";
+        var connection = new SqliteConnection();
+        return new SqliteDatabase(connection);
     }
     
     public static ISqliteDatabase CreateInMemory()
     {
-        return new SqliteDatabase("Data Source=:memory:");
+        var connectionString = "Data Source=:memory:";
+        var connection = new SqliteConnection(connectionString);
+        return new SqliteDatabase(connection);
     }
 
-     public static ISqliteDatabase CreateSharedInMemory()
+    public static ISqliteDatabase CreateSharedInMemory()
     {
-        return new SqliteDatabase("Data Source=InMemoryDatabase;Mode=Memory;Cache=Shared");
+        var connectionString = "Data Source=InMemoryDatabase;Mode=Memory;Cache=Shared";
+        var connection = new SqliteConnection(connectionString);
+        return new SqliteDatabase(connection);
     }
 
     public ISqliteDatabaseWithOpenedConnection OpenConnection()
     {
-        return new SqliteDatabaseWithOpenedConnection(_connectionString);
-    }
-
-    public static ISqliteDatabase FromConnectionString(string connectionString)
-    {
-        return new SqliteDatabase(connectionString);
+        return new SqliteDatabaseWithOpenedConnection(sqliteConnection);
     }
 }
